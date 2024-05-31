@@ -1,0 +1,34 @@
+---
+title: "snow_albedo_processing"
+author: "Erika Lee"
+date: "2024-05-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#packages
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(ggplot2)
+library(stringr)
+library(readxl)
+library(rstatix)
+library(sf)
+library(terra)
+
+setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
+```
+
+```{r}
+#read in data
+pers_albedo_all <- read_excel("nsf/albedo/Pers_b_albedo.xlsx") %>%
+  mutate(Date = ymd(Date, tz = 'MST')) %>%
+  time(Time = hms(Time, tz = 'MST'))
+
+trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx")
+```
