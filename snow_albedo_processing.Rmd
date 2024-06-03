@@ -20,6 +20,7 @@ library(readxl)
 library(rstatix)
 library(sf)
 library(terra)
+library(plotly)
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
@@ -28,7 +29,34 @@ setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 #read in data
 pers_albedo_all <- read_excel("nsf/albedo/Pers_b_albedo.xlsx") %>%
   mutate(Date = ymd(Date, tz = 'MST')) %>%
-  time(Time = hms(Time, tz = 'MST'))
+  #remove the weird date added to the time column
+  mutate(Time = format(as.POSIXct(Time), format = "%H:%M:%S"))
+  
 
-trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx")
+trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx") %>%
+  mutate(Date = ymd(Date, tz = 'MST')) %>%
+  #remove the weird date added to the time column
+  mutate(Time = format(as.POSIXct(Time), format = "%H:%M:%S"))
+
+#creating a combined dataset with SWin and SWout together
+trans_SW_combined <- trans_albedo_all %>%
+  pivot_longer(cols = starts_with("SW"), 
+               names_to = "SW",
+               values_to = "value") %>%
+  #filter out only those that say sun
+  filter(Sun_shadow == "sun")
+```
+
+```{r}
+#plot data
+trans_albedo <- ggplot(data = trans_SW_combined) +
+  geom_point(aes(x = Record_location, y = value, color = SW)) +
+  ggtitle("transitional")
+
+# Convert the ggplot object to a plotly object
+trans_albedo_plotly <- ggplotly(trans_albedo)
+
+# Print the plotly object to display the interactive plot
+trans_albedo_plotly
+  
 ```
