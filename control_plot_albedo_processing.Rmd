@@ -1,0 +1,125 @@
+---
+title: "control_plot_albedo_processing"
+author: "Erika Lee"
+date: "2024-06-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#packages
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(ggplot2)
+library(stringr)
+library(readxl)
+library(rstatix)
+library(sf)
+library(terra)
+library(plotly)
+
+setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
+```
+
+```{r}
+#read in persistent control plot data
+pers_control_all <- read_excel("nsf/albedo/albedo_experimental_plots/pers_experimental_plots.xlsx") %>%
+  # Convert Date to the correct date format
+  mutate(date = ymd(date))%>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(time = format(as.POSIXct(time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(date, time))) %>%
+  select(c(site_name, concentration, id, date, time, datetime, everything()))
+
+#read in transitional control plots
+trans_control_all <- read_excel("nsf/albedo/albedo_experimental_plots/trans_experimental_plots.xlsx") %>%
+  # Convert Date to the correct date format
+  mutate(date = ymd(date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(time = format(as.POSIXct(time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(date, time))) %>%
+  select(c(site_name, concentration, id, date, time, datetime, everything()))
+```
+
+```{r}
+#plotting albedo for control plots
+
+##this plot does not really make sense yet, may need to mess around with what is being facet wrapped + the concentration column
+pers_control_snow_albedo_all_plot <- ggplot(data = pers_control_all) +
+  geom_bar(aes(x = id, y = albedo, fill = soot_mass_g), alpha = 0.7, position = "dodge", stat = "identity") +
+  labs(
+    title = "Persistent Control Plot Albedo Data",
+    x = "Site Name",
+    y = "Albedo (unitless)", 
+    fill = "Soot Mass Added (g)"
+  ) +
+  theme_minimal() +
+  facet_wrap(~concentration + date)
+  
+pers_control_snow_albedo_all_plot
+
+library(RColorBrewer)  # Load the RColorBrewer library
+
+# Define a custom vector of colors from the "Spectral" palette
+custom_colors <- brewer.pal(11, "Spectral")[1:3]
+
+V2_pers_control_albedo_all_plot <- ggplot(data = pers_control_all) +
+  geom_bar(aes(x = id, y = albedo, fill = concentration, alpha = 0.9, position = "dodge", stat = "identity") +
+  labs(
+    title = "Persistent Control Plot Albedo Data",
+    x = "Site Name",
+    y = "Albedo (unitless)", 
+    fill = "Concentration of Soot Added"
+  )) +
+  theme_minimal() +
+  facet_wrap(~date) +
+  scale_fill_manual(values = custom_colors)
+  
+V2_pers_control_albedo_all_plot
+
+# Convert ggplot to Plotly plot
+pers_control_albedo_plotly <- plotly::ggplotly(V2_pers_control_snow_albedo_all_plot)
+
+pers_control_albedo_plotly
+
+#creating a snow depth plot for the same information, but instead of albedo doing snow depth
+## Define a custom vector of colors from the "Spectral" palette
+custom_colors_2 <- brewer.pal(11, "BrBG")[8:10]
+
+pers_control_snowd_all_plot <- ggplot(data = pers_control_all) +
+  geom_bar(aes(x = id, y = snow_depth_cm, fill = concentration), alpha = 0.9, position = "dodge", stat = "identity") +
+  labs(
+    title = "Persistent Control Plot Snow Depth Data",
+    x = "Site Name",
+    y = "Snow Depth (cm)", 
+    fill = "Concentration of Soot Added"
+  ) +
+  theme_minimal() +
+  facet_wrap(~date) +
+  scale_fill_manual(values = custom_colors_2) +
+  #adjusting y axis breaks
+    scale_y_continuous(breaks = seq(0, max(pers_control_all$snow_depth_cm), by = 25))  # Adjust the breaks as needed
+
+
+pers_control_snowd_all_plot
+
+# Convert ggplot to Plotly plot
+pers_control_snowd_all_plotly <- plotly::ggplotly(pers_control_snowd_all_plot)
+
+pers_control_snowd_all_plotly
+
+#combining albedo and snow depth plots
+pers_b_control_allplots <- subplot(pers_control_albedo_plotly, pers_control_snowd_all_plotly, nrows = 2, shareX = TRUE)
+
+# Add individual y-axis titles
+pers_b_control_allplots <- layout(pers_b_control_allplots,
+                                  xaxis = list(title = "Site Name"), yaxis = list(title = "Albedo (unitless)"), yaxis2 = list(title = "Snow Depth (cm)"))
+
+
+
+pers_b_control_allplots
+```
