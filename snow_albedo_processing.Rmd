@@ -204,5 +204,4 @@ trans_albedo_plot_feb <- ggplot() +
 
 
 trans_albedo_plot_feb
-
 ```
