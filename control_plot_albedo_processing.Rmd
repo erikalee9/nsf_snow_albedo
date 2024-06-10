@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 #packages
 library(tidyverse)
 library(lubridate)
-library(plotly)
 library(ggplot2)
 library(stringr)
 library(readxl)
@@ -22,6 +21,7 @@ library(sf)
 library(terra)
 library(plotly)
 library(RColorBrewer) 
+library(plotly)
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
@@ -81,7 +81,7 @@ V2_pers_control_albedo_all_plot <- ggplot(data = pers_control_all) +
 V2_pers_control_albedo_all_plot
 
 # Convert ggplot to Plotly plot
-pers_control_albedo_plotly <- plotly::ggplotly(V2_pers_control_albedo_all_plot)
+pers_control_albedo_plotly <- ggplotly(V2_pers_control_albedo_all_plot)
 
 pers_control_albedo_plotly
 
@@ -104,7 +104,7 @@ pers_control_snowd_all_plot <- ggplot(data = pers_control_all) +
 pers_control_snowd_all_plot
 
 # Convert ggplot to Plotly plot
-pers_control_snowd_all_plotly <- plotly::ggplotly(pers_control_snowd_all_plot)
+pers_control_snowd_all_plotly <- ggplotly(pers_control_snowd_all_plot)
 
 pers_control_snowd_all_plotly
 
@@ -114,7 +114,9 @@ pers_b_control_allplots <- subplot(pers_control_albedo_plotly, pers_control_snow
 # Add individual y-axis titles
 pers_b_control_allplots <- layout(pers_b_control_allplots,
                                   title = list(text = "Persistent Control Plots Albedo and Snow Depth"),
-                                  xaxis = list(title = "Plot Name"), yaxis = list(title = "Albedo (unitless)"), yaxis2 = list(title = "Snow Depth (cm)"))
+                                  xaxis = list(title = "Plot Name"), 
+                                  yaxis = list(title = "Albedo (unitless)"), 
+                                  yaxis2 = list(title = "Snow Depth (cm)"))
 
 pers_b_control_allplots
 ```
@@ -138,7 +140,7 @@ trans_control_albedo_all_plot <- ggplot(data = trans_control_all) +
 trans_control_albedo_all_plot
 
 # Convert ggplot to Plotly plot
-trans_control_albedo_plotly <- plotly::ggplotly(trans_control_albedo_all_plot)
+trans_control_albedo_plotly <- ggplotly(trans_control_albedo_all_plot)
 
 trans_control_albedo_plotly
 
@@ -161,19 +163,17 @@ trans_control_snowd_all_plot <- ggplot(data = trans_control_all) +
 trans_control_snowd_all_plot
 
 # Convert ggplot to Plotly plot
-trans_control_snowd_all_plotly <- plotly::ggplotly(trans_control_snowd_all_plot)
+trans_control_snowd_all_plotly <- ggplotly(trans_control_snowd_all_plot)
 
 trans_control_snowd_all_plotly
 
 #combining albedo and snow depth plots
-trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_snowd_all_plotly, nrows = 2, shareX = TRUE)
-
-# Update the layout with individual y-axis titles
-trans_b_control_allplots <- layout(trans_b_control_allplots,
+trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_snowd_all_plotly, nrows = 2, shareX = TRUE) %>%
+  layout(trans_b_control_allplots,
                                    title = list(text = "Transitional Control Plots Albedo and Snow Depth"),
                                    xaxis = list(title = "Plot Name"),
-                                   yaxis = list(title = "Albedo (unitless)", domain = c(0.55, 1)),  # Adjust domain for y-axis 1
-                                   yaxis2 = list(title = "Snow Depth (cm)", domain = c(0, 0.45)))  # Adjust domain for y-axis 2
+                                   yaxis = list(title = "Albedo (unitless)"),  # Adjust domain for y-axis 1
+                                   yaxis2 = list(title = "Snow Depth (cm)"))
 
 trans_b_control_allplots
 ```
