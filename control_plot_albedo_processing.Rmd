@@ -21,6 +21,7 @@ library(rstatix)
 library(sf)
 library(terra)
 library(plotly)
+library(RColorBrewer) 
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
@@ -61,8 +62,6 @@ pers_control_snow_albedo_all_plot <- ggplot(data = pers_control_all) +
   facet_wrap(~concentration + date)
   
 pers_control_snow_albedo_all_plot
-
-library(RColorBrewer)  # Load the RColorBrewer library
 
 # Define a custom vector of colors from the "Spectral" palette
 custom_colors <- brewer.pal(11, "Spectral")[1:3]
@@ -118,4 +117,63 @@ pers_b_control_allplots <- layout(pers_b_control_allplots,
                                   xaxis = list(title = "Plot Name"), yaxis = list(title = "Albedo (unitless)"), yaxis2 = list(title = "Snow Depth (cm)"))
 
 pers_b_control_allplots
+```
+
+Transitional Plots
+
+```{r}
+
+trans_control_albedo_all_plot <- ggplot(data = trans_control_all) +
+  geom_bar(aes(x = id, y = albedo, fill = concentration), alpha = 0.9, position = "dodge", stat = "identity") +
+  labs(
+    title = "Transitional Control Plot Albedo Data",
+    x = "Site Name",
+    y = "Albedo (unitless)", 
+    fill = "Concentration of Soot Added"
+  ) +
+  theme_minimal() +
+  facet_wrap(~date) +
+  scale_fill_manual(values = custom_colors)
+  
+trans_control_albedo_all_plot
+
+# Convert ggplot to Plotly plot
+trans_control_albedo_plotly <- plotly::ggplotly(trans_control_albedo_all_plot)
+
+trans_control_albedo_plotly
+
+#creating a snow depth plot for the same information, but instead of albedo doing snow depth
+## Define a custom vector of colors from the "Spectral" palette
+custom_colors_2 <- brewer.pal(11, "BrBG")[10:8]
+
+trans_control_snowd_all_plot <- ggplot(data = trans_control_all) +
+  geom_bar(aes(x = id, y = snow_depth_cm, fill = concentration), alpha = 0.9, position = "dodge", stat = "identity") +
+  labs(
+    title = "Transitional Control Plot Snow Depth Data",
+    x = "Site Name",
+    y = "Snow Depth (cm)", 
+    fill = "Concentration of Soot Added"
+  ) +
+  theme_minimal() +
+  facet_wrap(~date) +
+  scale_fill_manual(values = custom_colors_2)
+
+trans_control_snowd_all_plot
+
+# Convert ggplot to Plotly plot
+trans_control_snowd_all_plotly <- plotly::ggplotly(trans_control_snowd_all_plot)
+
+trans_control_snowd_all_plotly
+
+#combining albedo and snow depth plots
+trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_snowd_all_plotly, nrows = 2, shareX = TRUE)
+
+# Update the layout with individual y-axis titles
+trans_b_control_allplots <- layout(trans_b_control_allplots,
+                                   title = list(text = "Transitional Control Plots Albedo and Snow Depth"),
+                                   xaxis = list(title = "Plot Name"),
+                                   yaxis = list(title = "Albedo (unitless)", domain = c(0.55, 1)),  # Adjust domain for y-axis 1
+                                   yaxis2 = list(title = "Snow Depth (cm)", domain = c(0, 0.45)))  # Adjust domain for y-axis 2
+
+trans_b_control_allplots
 ```
