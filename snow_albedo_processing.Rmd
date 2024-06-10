@@ -26,17 +26,62 @@ setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
 
 ```{r}
-#read in data
+#read in weather data for burned stations
+trans_burned_wx_15min_r = read_excel('nsf/trans_burned/trans_burned_wx_15min_r.xlsx') %>%
+  mutate(datetime = ymd_hms(datetime, tz = "MST")) %>%
+  filter(datetime >= "2024-02-02 00:00:00" & datetime <= "2024-05-01 00:00:00")
+
+pers_burned_wx_15min_r = read_excel('nsf/pers_burned/pers_burned_wx_15min_r.xlsx') %>%
+  mutate(datetime = ymd_hms(datetime, tz = "MST")) %>%
+  filter(datetime >= "2024-02-02 00:00:00" & datetime <= "2024-05-01 00:00:00")
+```
+
+```{r}
+#read in persistent data
 pers_albedo_all <- read_excel("nsf/albedo/Pers_b_albedo.xlsx") %>%
-  mutate(Date = ymd(Date, tz = 'MST')) %>%
-  #remove the weird date added to the time column
-  mutate(Time = format(as.POSIXct(Time), format = "%H:%M:%S"))
+  # Convert Date to the correct date format
+  mutate(Date = ymd(Date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(Date, Time)))
+
+#selecting for April albedo readings
+pers_albedo_may <- pers_albedo_all %>%
+  filter(Date == '2024-05-13')
+
+
+pers_mean_albedo_by_date <- pers_albedo_all %>%
+  group_by(Date) %>%
+  summarize(mean_Albedo = mean(Albedo, na.rm = TRUE))
+
+# Join the mean albedo data back to the original dataframe
+pers_albedo_all <- pers_albedo_all %>%
+  left_join(pers_mean_albedo_by_date, by = "Date")
   
 
+# Read the Excel file
 trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx") %>%
-  mutate(Date = ymd(Date, tz = 'MST')) %>%
-  #remove the weird date added to the time column
-  mutate(Time = format(as.POSIXct(Time), format = "%H:%M:%S"))
+  # Convert Date to the correct date format
+  mutate(Date = ymd(Date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(Date, Time)))
+
+#selecting for April albedo readings
+trans_albedo_april <- trans_albedo_all %>%
+  filter(Date == '2024-04-12')
+
+trans_albedo_feb <- trans_albedo_all %>%
+  filter(Date == '2024-02-19')
+
+
+trans_mean_albedo_by_date <- trans_albedo_all %>%
+  group_by(Date) %>%
+  summarize(mean_Albedo = mean(Albedo, na.rm = TRUE))
+
+# Join the mean albedo data back to the original dataframe
+trans_albedo_all <- trans_albedo_all %>%
+  left_join(trans_mean_albedo_by_date, by = "Date")
 
 #creating a combined dataset with SWin and SWout together
 trans_SW_combined <- trans_albedo_all %>%
@@ -59,4 +104,105 @@ trans_albedo_plotly <- ggplotly(trans_albedo)
 # Print the plotly object to display the interactive plot
 trans_albedo_plotly
   
+```
+
+Snow depth and albedo plots
+
+```{r}
+#transitional snow depth
+transb_snowd_plot <- ggplot() +
+  geom_line(data = trans_burned_wx_15min_r, aes(x = datetime, y = SnowDepth_m), color = "black") +
+  labs(
+    title = "Transitional Snow Depth Over Time",
+    x = "Date",
+    y = "Snow Depth (m)",
+  ) +
+  theme_minimal()
+
+transb_snowd_plot
+
+#persistent snow depth
+##* not sure if this snow depth column is the correct data to be using!
+persb_snowd_plot <- ggplot() +
+  geom_line(data = pers_burned_wx_15min_r, aes(x = datetime, y = DT_Avg), color = "black") +
+  labs(
+    title = "Persistent Snow Depth Over Time",
+    x = "Date",
+    y = "Snow Depth (m)",
+  ) +
+  theme_minimal()
+
+persb_snowd_plot
+```
+
+Plotting albedo by transect point and date
+
+\*\*these plots look good!
+
+```{r}
+#transitional
+##april plot - both low and high mort
+trans_albedo_plot_april <- ggplot() +
+  geom_col(data = trans_albedo_april, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Burned Albedo: 2024-04-12",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue"))
+
+
+trans_albedo_plot_april
+
+#february plot - only high mort
+trans_albedo_plot_feb <- ggplot() +
+  geom_col(data = trans_albedo_feb, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Burned Albedo: 2024-02-19",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue"))
+
+
+trans_albedo_plot_feb
+
+```
+
+```{r}
+#persistent
+##april plot - both low and high mort
+trans_albedo_plot_april <- ggplot() +
+  geom_col(data = trans_albedo_april, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Burned Albedo: 2024-04-12",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue"))
+
+
+trans_albedo_plot_april
+
+#february plot - only high mort
+trans_albedo_plot_feb <- ggplot() +
+  geom_col(data = trans_albedo_feb, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Burned Albedo: 2024-02-19",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue"))
+
+
+trans_albedo_plot_feb
+
 ```
