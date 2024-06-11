@@ -108,10 +108,15 @@ pers_control_snowd_all_plotly <- ggplotly(pers_control_snowd_all_plot)
 
 pers_control_snowd_all_plotly
 
-#combining albedo and snow depth plots
+#trying to combine ggplots and export to see if the layout works - it does, they are just not interactive
+pers_b_control_all_V2 <- V2_pers_control_albedo_all_plot + pers_control_snowd_all_plot + plot_layout(nrow = 2)
+
+print(pers_b_control_all_V2)
+
+#combining albedo and snow depth plots - NOT WORKING
 pers_b_control_allplots <- subplot(pers_control_albedo_plotly, pers_control_snowd_all_plotly, nrows = 2, shareX = TRUE)
 
-# Add individual y-axis titles
+# Add individual y-axis titles - NOT WORKING
 pers_b_control_allplots <- layout(pers_b_control_allplots,
                                   title = list(text = "Persistent Control Plots Albedo and Snow Depth"),
                                   xaxis = list(title = "Plot Name"), 
@@ -162,13 +167,22 @@ trans_control_snowd_all_plot <- ggplot(data = trans_control_all) +
 
 trans_control_snowd_all_plot
 
-# Convert ggplot to Plotly plot
+#Combining ggplots and export to see if the layout works - it does, they are just not interactive
+trans_b_control_all <- trans_control_albedo_all_plot + trans_control_snowd_all_plot + plot_layout(nrow = 2)
+
+print(trans_b_control_all)
+
+print(pers_b_control_all_V2)
+
+# Convert ggplot to Plotly plot - NOT WORKING
 trans_control_snowd_all_plotly <- ggplotly(trans_control_snowd_all_plot)
 
 trans_control_snowd_all_plotly
 
-#combining albedo and snow depth plots
-trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_snowd_all_plotly, nrows = 2, shareX = TRUE) %>%
+#combining albedo and snow depth plots - NOT WORKING
+trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_snowd_all_plotly, nrows = 2, shareX = TRUE) 
+
+trans_b_control_allplots <- trans_b_control_allplots %>%
   layout(trans_b_control_allplots,
                                    title = list(text = "Transitional Control Plots Albedo and Snow Depth"),
                                    xaxis = list(title = "Plot Name"),
@@ -176,4 +190,18 @@ trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_s
                                    yaxis2 = list(title = "Snow Depth (cm)"))
 
 trans_b_control_allplots
+```
+
+```{r}
+#exporting individual plots because I cannot get the combination plots to work well
+
+##persistent plots
+# Save the plot as a PNG file to working directory
+ggsave("pers_b_control_all.png", plot = pers_b_control_all_V2, width = 8, height = 6, dpi = 300, bg = "white")
+
+ggsave("trans_b_control_all.png", plot = trans_b_control_all, width = 8, height = 6, dpi = 300, bg = "white")
+
+print(trans_b_control_all)
+
+print(pers_b_control_all_V2)
 ```
