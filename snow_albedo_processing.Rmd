@@ -21,6 +21,7 @@ library(rstatix)
 library(sf)
 library(terra)
 library(plotly)
+library(patchwork)
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
@@ -171,10 +172,17 @@ trans_albedo_plot_feb <- ggplot() +
 
 trans_albedo_plot_feb
 
+#combining plots
+trans_b_albedo_plots_all<- trans_albedo_plot_feb + trans_albedo_plot_april + plot_layout(nrow = 2)
 ```
 
 ```{r}
-#persistent
+# Save the transitional combined plot as a PNG file to working directory
+ggsave("trans_b_albedo_plots_all.png", plot = trans_b_albedo_plots_all, width = 8, height = 6, dpi = 300, bg = "white")
+```
+
+```{r}
+#persistent - NO DATA FOR THIS YET
 ##april plot - both low and high mort
 trans_albedo_plot_april <- ggplot() +
   geom_col(data = trans_albedo_april, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
