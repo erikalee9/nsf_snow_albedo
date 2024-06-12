@@ -183,7 +183,7 @@ ggsave("trans_b_albedo_plots_all.png", plot = trans_b_albedo_plots_all, width = 
 
 ```{r}
 #persistent - NO DATA FOR THIS YET
-##april plot - both low and high mort
+
 trans_albedo_plot_april <- ggplot() +
   geom_col(data = trans_albedo_april, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
   labs(
