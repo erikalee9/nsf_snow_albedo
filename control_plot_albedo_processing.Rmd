@@ -22,6 +22,7 @@ library(terra)
 library(plotly)
 library(RColorBrewer) 
 library(plotly)
+library(patchwork)
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
@@ -92,7 +93,6 @@ custom_colors_2 <- brewer.pal(11, "BrBG")[10:8]
 pers_control_snowd_all_plot <- ggplot(data = pers_control_all) +
   geom_bar(aes(x = id, y = snow_depth_cm, fill = concentration), alpha = 0.9, position = "dodge", stat = "identity") +
   labs(
-    title = "Persistent Control Plot Snow Depth Data",
     x = "Site Name",
     y = "Snow Depth (cm)", 
     fill = "Concentration of Soot Added"
@@ -103,15 +103,18 @@ pers_control_snowd_all_plot <- ggplot(data = pers_control_all) +
 
 pers_control_snowd_all_plot
 
+#combinging ggplots 
+pers_b_control_all_V2 <- V2_pers_control_albedo_all_plot + pers_control_snowd_all_plot + plot_layout(nrow = 2)
+
+print(pers_b_control_all_V2)
+```
+
+```{r}
+##NONE OF THIS IS WORKING, DO NOT RUN
 # Convert ggplot to Plotly plot
 pers_control_snowd_all_plotly <- ggplotly(pers_control_snowd_all_plot)
 
 pers_control_snowd_all_plotly
-
-#trying to combine ggplots and export to see if the layout works - it does, they are just not interactive
-pers_b_control_all_V2 <- V2_pers_control_albedo_all_plot + pers_control_snowd_all_plot + plot_layout(nrow = 2)
-
-print(pers_b_control_all_V2)
 
 #combining albedo and snow depth plots - NOT WORKING
 pers_b_control_allplots <- subplot(pers_control_albedo_plotly, pers_control_snowd_all_plotly, nrows = 2, shareX = TRUE)
@@ -156,7 +159,6 @@ custom_colors_2 <- brewer.pal(11, "BrBG")[10:8]
 trans_control_snowd_all_plot <- ggplot(data = trans_control_all) +
   geom_bar(aes(x = id, y = snow_depth_cm, fill = concentration), alpha = 0.9, position = "dodge", stat = "identity") +
   labs(
-    title = "Transitional Control Plot Snow Depth Data",
     x = "Site Name",
     y = "Snow Depth (cm)", 
     fill = "Concentration of Soot Added"
@@ -173,23 +175,6 @@ trans_b_control_all <- trans_control_albedo_all_plot + trans_control_snowd_all_p
 print(trans_b_control_all)
 
 print(pers_b_control_all_V2)
-
-# Convert ggplot to Plotly plot - NOT WORKING
-trans_control_snowd_all_plotly <- ggplotly(trans_control_snowd_all_plot)
-
-trans_control_snowd_all_plotly
-
-#combining albedo and snow depth plots - NOT WORKING
-trans_b_control_allplots <- subplot(trans_control_albedo_plotly, trans_control_snowd_all_plotly, nrows = 2, shareX = TRUE) 
-
-trans_b_control_allplots <- trans_b_control_allplots %>%
-  layout(trans_b_control_allplots,
-                                   title = list(text = "Transitional Control Plots Albedo and Snow Depth"),
-                                   xaxis = list(title = "Plot Name"),
-                                   yaxis = list(title = "Albedo (unitless)"),  # Adjust domain for y-axis 1
-                                   yaxis2 = list(title = "Snow Depth (cm)"))
-
-trans_b_control_allplots
 ```
 
 ```{r}
@@ -204,4 +189,161 @@ ggsave("trans_b_control_all.png", plot = trans_b_control_all, width = 8, height 
 print(trans_b_control_all)
 
 print(pers_b_control_all_V2)
+```
+
+Different Plotting Approach
+
+```{r}
+#creating monthly dataframes
+pers_control_april <- pers_control_all %>%
+  filter(date == c('2024-04-05', '2024-04-29'))
+
+pers_control_april05 <- pers_control_all %>%
+  filter(date == '2024-04-05')
+
+pers_control_april29 <- pers_control_all %>%
+  filter(date == '2024-04-29')
+
+pers_control_may <- pers_control_all %>%
+  filter(date == c('2024-05-13', '2024-05-31'))
+
+pers_control_may13 <- pers_control_all %>%
+  filter(date == '2024-05-13')
+
+pers_control_may31 <- pers_control_all %>%
+  filter(date == '2024-05-31')
+
+trans_control_march20 <- trans_control_all %>%
+  filter(date == '2024-03-20')
+
+trans_control_april29 <- trans_control_all %>%
+  filter(date == '2024-04-20')
+
+trans_control_may13 <- trans_control_all %>%
+  filter(date == '2024-05-13')
+```
+
+Plotting by Mean Conc by Date
+
+```{r}
+#making one large dataframe so I can facet wrap by snowzone
+## adding in zone column
+trans_control_all <- trans_control_all %>%
+  mutate(zone = "transitional")
+
+pers_control_all <- pers_control_all %>%
+  mutate(zone = "persistent")
+
+combined_zone_control_data <- rbind(pers_control_all, trans_control_all)
+```
+
+```{r}
+#COMBINED DATA FRAME PLOTS
+##combined albedo plots
+all_control_albedo_plot <- ggplot(data = combined_zone_control_data) +
+  geom_col(aes(x = factor(date), y = mean_albedo_bydate, fill = concentration), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Control Plots Albedo",
+    x = "Date of Observation",
+    y = "Mean Albedo by Concentration (unitless)"
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey")) +
+  facet_wrap(~zone, scales = "free_x")
+#set scales = "free_x" for the facet wrap to let the individual plots set their own x scale
+
+all_control_albedo_plot
+
+##combined snowdepth plots
+all_control_snowdepth_plots <- ggplot() +
+  geom_col(data = combined_zone_control_data, aes(x = factor(date), y = mean_snowdepth_bydate, fill = concentration), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Control Plots Snow Depth",
+    x = "Date of Observation",
+    y = "Mean Snow Depth by Concentration (cm)"
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey")) +
+  facet_wrap(~zone, scales = "free_x")
+
+all_control_snowdepth_plots
+```
+
+```{r}
+#INDIVIDUAL DATA FRAME PLOTS
+#persistent control albedo
+pers_controlalb_all_plot <- ggplot() +
+  geom_col(data = pers_control_all, aes(x = factor(date), y = mean_albedo_bydate, fill = concentration), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Persistent Control Plots Albedo",
+    x = "Date of Observation",
+    y = "Mean Albedo by Concentration (unitless)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey"))
+
+pers_controlalb_all_plot
+
+#transitional control albedo
+trans_controlalb_all_plot <- ggplot() +
+  geom_col(data = trans_control_all, aes(x = factor(date), y = mean_albedo_bydate, fill = concentration), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Control Plots Albedo",
+    x = "Date of Observation",
+    y = "Mean Albedo by Concentration (unitless)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey"))
+
+trans_controlalb_all_plot
+```
+
+```{r}
+#plotting snow depths
+#persistent control albedo
+pers_controlsnowdepth_all_plot <- ggplot() +
+  geom_col(data = pers_control_all, aes(x = factor(date), y = mean_snowdepth_bydate, fill = concentration), alpha = 0.4, width = 0.6, position = "dodge") +
+  labs(
+    #title = "Persistent Control Plots Snow Depth",
+    x = "Date of Observation",
+    y = "Mean Snow Depth by Concentration (cm)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey"))
+
+pers_controlsnowdepth_all_plot
+
+#transitional control albedo
+trans_controlsnowdepth_all_plot <- ggplot() +
+  geom_col(data = trans_control_all, aes(x = factor(date), y = mean_snowdepth_bydate, fill = concentration), alpha = 0.4, width = 0.6, position = "dodge") +
+  labs(
+    #title = "Persistent Control Plots Snow Depth",
+    x = "Date of Observation",
+    y = "Mean Snow Depth by Concentration (cm)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey"))
+
+trans_controlsnowdepth_all_plot
+```
+
+```{r}
+#combining albedo and snowdepth plots by zone
+pers_control_allplots <- pers_controlalb_all_plot + pers_controlsnowdepth_all_plot + plot_layout(nrow = 2)
+
+pers_control_allplots
+
+trans_control_allplots <- trans_controlalb_all_plot + trans_controlsnowdepth_all_plot + plot_layout(nrow = 2)
+
+trans_control_allplots
+
+#Combinging the combined albedo and snowdepth plots
+all_control_plots <- all_control_albedo_plot + all_control_snowdepth_plots + plot_layout(nrow = 2)
+
+all_control_plots
+```
+
+```{r}
+#saving combined plot
+ggsave("all_controlplot_albedo_results.png", plot = all_control_plots, width = 8, height = 6, dpi = 300, bg = "white")
 ```
