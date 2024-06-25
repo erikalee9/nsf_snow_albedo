@@ -177,6 +177,45 @@ print(trans_b_control_all)
 print(pers_b_control_all_V2)
 ```
 
+Creating Box Plots of Range
+
+```{r}
+#persistent box plots
+#this approach is not best
+pers_control_boxplot <- ggplot(pers_control_all, aes(x = site_name, y = albedo)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "All Persistent Control Plots", x = "site_name", y = "albedo")
+
+print(pers_control_boxplot)
+
+##this approach seems to have the best data display
+pers_control_boxplots_byconc <- ggplot(pers_control_all, aes(x = concentration, y = albedo)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Persistent Control Boxplots by Concentration", x = "Concentration", y = "Albedo (unitless)") +
+  facet_wrap(~ date)
+
+print(pers_control_boxplots_byconc)
+
+#transitional
+trans_control_boxplots_byconc <- ggplot(trans_control_all, aes(x = concentration, y = albedo)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Transitional Control Boxplots by Concentration", x = "Concentration", y = "Albedo (unitless)") +
+  facet_wrap(~ date)
+
+print(trans_control_boxplots_byconc)
+```
+
+```{r}
+#saving control box plots
+# Save the plot as a PNG file to working directory
+ggsave("pers_control_boxplots_byconc.png", plot = pers_control_boxplots_byconc, width = 8, height = 6, dpi = 300, bg = "white")
+
+ggsave("trans_control_boxplots_byconc.png", plot = pers_control_boxplots_byconc, width = 8, height = 6, dpi = 300, bg = "white")
+```
+
 ```{r}
 #exporting individual plots because I cannot get the combination plots to work well
 
