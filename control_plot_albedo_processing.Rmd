@@ -23,19 +23,29 @@ library(plotly)
 library(RColorBrewer) 
 library(plotly)
 library(patchwork)
+library(ggpubr)
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
 
 ```{r}
 #read in persistent control plot data
+library(readxl)
+library(dplyr)
+library(lubridate)
+
 pers_control_all <- read_excel("nsf/albedo/albedo_experimental_plots/pers_experimental_plots.xlsx") %>%
   # Convert Date to the correct date format
-  mutate(date = ymd(date))%>%
+  mutate(date = ymd(date)) %>%
   # Ensure Time is formatted correctly (remove any weird date part)
   mutate(time = format(as.POSIXct(time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  # Combine date and time into a datetime column
   mutate(datetime = ymd_hms(paste(date, time))) %>%
+  # Assign MST time zone to the datetime column
+  mutate(datetime = force_tz(datetime, tzone = "MST")) %>%
+  # Rearrange columns
   select(c(site_name, concentration, id, date, time, datetime, everything()))
+
 
 #read in transitional control plots
 trans_control_all <- read_excel("nsf/albedo/albedo_experimental_plots/trans_experimental_plots.xlsx") %>%
@@ -44,6 +54,8 @@ trans_control_all <- read_excel("nsf/albedo/albedo_experimental_plots/trans_expe
   # Ensure Time is formatted correctly (remove any weird date part)
   mutate(time = format(as.POSIXct(time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
   mutate(datetime = ymd_hms(paste(date, time))) %>%
+  # Assign MST time zone to the datetime column
+  mutate(datetime = force_tz(datetime, tzone = "MST")) %>%
   select(c(site_name, concentration, id, date, time, datetime, everything()))
 ```
 
@@ -65,7 +77,7 @@ pers_control_snow_albedo_all_plot <- ggplot(data = pers_control_all) +
 pers_control_snow_albedo_all_plot
 
 # Define a custom vector of colors from the "Spectral" palette
-custom_colors <- brewer.pal(11, "Spectral")[1:3]
+custom_colors <- c("#D95F02", "#E6AB02", "#66A61E")
 
 V2_pers_control_albedo_all_plot <- ggplot(data = pers_control_all) +
   geom_bar(aes(x = id, y = albedo, fill = concentration), alpha = 0.9, position = "dodge", stat = "identity") +
@@ -130,6 +142,17 @@ pers_b_control_allplots
 ```
 
 Transitional Plots
+
+```{r}
+#colors for plots
+#to display the colors
+display.brewer.pal(n = 8, name = "Dark2")
+
+#to get the hex number of the colors
+brewer.pal(n = 8, name = "Dark2")
+
+custom_colors <- brewer.pal(c("#D95F02", "#E6AB02", "#66A61E"))
+```
 
 ```{r}
 
@@ -284,10 +307,10 @@ all_control_albedo_plot <- ggplot(data = combined_zone_control_data) +
   labs(
     title = "Control Plots Albedo",
     x = "Date of Observation",
-    y = "Mean Albedo by Concentration (unitless)"
+    y = "Mean Albedo by Concentration (unitless)", fill = "Concentration of Soot Added"  # Rename the legend title here
   ) +
   theme_bw() +
-  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey")) +
+  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#66A61E")) +
   facet_wrap(~zone, scales = "free_x")
 #set scales = "free_x" for the facet wrap to let the individual plots set their own x scale
 
@@ -297,12 +320,13 @@ all_control_albedo_plot
 all_control_snowdepth_plots <- ggplot() +
   geom_col(data = combined_zone_control_data, aes(x = factor(date), y = mean_snowdepth_bydate, fill = concentration), alpha = 0.7, width = 0.6, position = "dodge") +
   labs(
-    title = "Control Plots Snow Depth",
+    title = "Control Plot Depths",
     x = "Date of Observation",
-    y = "Mean Snow Depth by Concentration (cm)"
+    y = "Mean Snow Depth (cm)", 
+    fill = "Concentration of Soot Added"  # Rename the legend title here
   ) +
   theme_bw() +
-  scale_fill_manual(values = c("high (3 g)" = "red", "low (1 g)" = "blue", "none" = "grey")) +
+  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#66A61E")) +
   facet_wrap(~zone, scales = "free_x")
 
 all_control_snowdepth_plots
@@ -377,14 +401,20 @@ trans_control_allplots <- trans_controlalb_all_plot + trans_controlsnowdepth_all
 trans_control_allplots
 
 #Combinging the combined albedo and snowdepth plots
-all_control_plots <- all_control_albedo_plot + all_control_snowdepth_plots + plot_layout(nrow = 2)
+all_control_plots <- ggarrange(
+  all_control_albedo_plot, 
+  all_control_snowdepth_plots, 
+  nrow = 2,              # Arrange in 2 rows
+  common.legend = TRUE,  # Share a common legend
+  legend = "right"       # Position the legend on the right
+)
 
 all_control_plots
 ```
 
 ```{r}
 #saving combined plot
-ggsave("all_controlplot_albedo_results.png", plot = all_control_plots, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("all_controlplot_albedo_results.png", plot = all_control_plots, width = 10, height = 6, dpi = 300, bg = "white")
 ```
 
 \*\* made comment here to see if I can get git to connect/push/pull
