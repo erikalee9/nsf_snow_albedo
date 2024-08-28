@@ -1,0 +1,352 @@
+---
+title: "snow_albedo_processing"
+author: "Erika Lee"
+date: "2024-05-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#packages
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(ggplot2)
+library(stringr)
+library(readxl)
+library(rstatix)
+library(sf)
+library(terra)
+library(plotly)
+library(patchwork)
+
+setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
+```
+
+```{r}
+#read in weather data for burned stations
+trans_burned_wx_15min_r = read_excel('nsf/trans_burned/trans_burned_wx_15min_r.xlsx') %>%
+  mutate(datetime = ymd_hms(datetime, tz = "MST")) %>%
+  filter(datetime >= "2024-02-02 00:00:00" & datetime <= "2024-05-01 00:00:00")
+
+pers_burned_wx_15min_r = read_excel('nsf/pers_burned/pers_burned_wx_15min_r.xlsx') %>%
+  mutate(datetime = ymd_hms(datetime, tz = "MST")) %>%
+  filter(datetime >= "2024-02-02 00:00:00" & datetime <= "2024-05-01 00:00:00")
+```
+
+```{r}
+#read in persistent burned data
+pers_ub_albedo_all <- read_excel("nsf/albedo/Pers_ub_albedo.xlsx") %>%
+  # Convert Date to the correct date format
+  mutate(Date = ymd(Date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(Date, Time)))
+
+#read in persistent data
+pers_albedo_all <- read_excel("nsf/albedo/Pers_b_albedo.xlsx") %>%
+  # Convert Date to the correct date format
+  mutate(Date = ymd(Date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(Date, Time)))
+
+#read in persistent data - this is V2, where I manipulated the 5/31 data!
+pers_albedo_all_V2 <- read_excel("nsf/albedo/Pers_b_albedo_V2.xlsx") %>%
+  # Convert Date to the correct date format
+  mutate(Date = ymd(Date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(Date, Time)))
+
+#selecting for May 13 albedo readings
+pers_albedo_may13 <- pers_albedo_all %>%
+  filter(Date == '2024-05-13')
+
+#selecting for May 31 albedo readings
+pers_albedo_may31 <- pers_albedo_all_V2 %>%
+  filter(Date == '2024-05-31')
+
+
+pers_mean_albedo_by_date <- pers_albedo_all %>%
+  group_by(Date) %>%
+  summarize(mean_Albedo = mean(Albedo, na.rm = TRUE))
+
+# Join the mean albedo data back to the original dataframe
+pers_albedo_all <- pers_albedo_all %>%
+  left_join(pers_mean_albedo_by_date, by = "Date")
+  
+
+# Read the Excel file
+trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx") %>%
+  # Convert Date to the correct date format
+  mutate(Date = ymd(Date)) %>%
+  # Ensure Time is formatted correctly (remove any weird date part)
+  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
+  mutate(datetime = ymd_hms(paste(Date, Time)))
+
+#selecting for April albedo readings
+trans_albedo_april <- trans_albedo_all %>%
+  filter(Date == '2024-04-12')
+
+trans_albedo_feb <- trans_albedo_all %>%
+  filter(Date == '2024-02-19')
+
+
+trans_mean_albedo_by_date <- trans_albedo_all %>%
+  group_by(Date) %>%
+  summarize(mean_Albedo = mean(Albedo, na.rm = TRUE))
+
+# Join the mean albedo data back to the original dataframe
+trans_albedo_all <- trans_albedo_all %>%
+  left_join(trans_mean_albedo_by_date, by = "Date")
+
+#creating a combined dataset with SWin and SWout together
+trans_SW_combined <- trans_albedo_all %>%
+  pivot_longer(cols = starts_with("SW"), 
+               names_to = "SW",
+               values_to = "value") %>%
+  #filter out only those that say sun
+  filter(Sun_shadow == "sun")
+```
+
+```{r}
+#plot data
+trans_albedo <- ggplot(data = trans_SW_combined) +
+  geom_point(aes(x = Record_location, y = value, color = SW)) +
+  ggtitle("transitional")
+
+# Convert the ggplot object to a plotly object
+trans_albedo_plotly <- ggplotly(trans_albedo)
+
+# Print the plotly object to display the interactive plot
+trans_albedo_plotly
+  
+```
+
+Snow depth and albedo plots
+
+```{r}
+#transitional snow depth
+transb_snowd_plot <- ggplot() +
+  geom_line(data = trans_burned_wx_15min_r, aes(x = datetime, y = SnowDepth_m), color = "black") +
+  labs(
+    title = "Transitional Snow Depth Over Time",
+    x = "Date",
+    y = "Snow Depth (m)",
+  ) +
+  theme_minimal()
+
+transb_snowd_plot
+
+#persistent snow depth
+##* not sure if this snow depth column is the correct data to be using!
+persb_snowd_plot <- ggplot() +
+  geom_line(data = pers_burned_wx_15min_r, aes(x = datetime, y = DT_Avg), color = "black") +
+  labs(
+    title = "Persistent Snow Depth Over Time",
+    x = "Date",
+    y = "Snow Depth (m)",
+  ) +
+  theme_minimal()
+
+persb_snowd_plot
+```
+
+Plotting albedo by transect point and date
+
+\*\*these plots look good!
+
+```{r}
+#transitional
+##april plot - both low and high mort
+trans_albedo_plot_april <- ggplot() +
+  geom_col(data = trans_albedo_april, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Burned Albedo: 2024-04-12",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue"))
+
+
+trans_albedo_plot_april
+
+#february plot
+trans_albedo_plot_feb <- ggplot() +
+  geom_col(data = trans_albedo_feb, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Transitional Burned Albedo: 2024-02-19",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue"))
+
+
+trans_albedo_plot_feb
+
+#combining plots
+trans_b_albedo_plots_all<- trans_albedo_plot_feb + trans_albedo_plot_april + plot_layout(nrow = 2)
+```
+
+```{r}
+#transitional SWin/out plot
+##february
+trans_albedo_SWinout_feb <- ggplot() +
+  # SWin
+  geom_line(data = trans_albedo_feb, aes(x = Record_location, y = SWin_wperm2, color = Site, group = Site, linetype = "SWin"), alpha = 0.7, linewidth = 0.8) +
+  # SWout
+  geom_line(data = trans_albedo_feb, aes(x = Record_location, y = SWout_wperm2, color = Site, group = Site, linetype = "SWout"), alpha = 0.5, linewidth = 0.8) +
+  labs(
+    x = "Transect point (1 m apart)",
+    y = "SWin/out (W/m2)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_color_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue")) +
+  scale_linetype_manual(values = c("SWin" = "solid", "SWout" = "dashed"))
+
+trans_albedo_SWinout_feb
+
+#april
+trans_albedo_SWinout_april <- ggplot() +
+  # SWin
+  geom_line(data = trans_albedo_april, aes(x = Record_location, y = SWin_wperm2, color = Site, group = Site, linetype = "SWin"), alpha = 0.7, linewidth = 0.8) +
+  # SWout
+  geom_line(data = trans_albedo_april, aes(x = Record_location, y = SWout_wperm2, color = Site, group = Site, linetype = "SWout"), alpha = 0.5, linewidth = 0.8) +
+  labs(
+    x = "Transect point (1 m apart)",
+    y = "SWin/out (W/m2)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_color_manual(values = c("trans_b_lp_highmort" = "red", "trans_b_lp_lowmort" = "blue")) +
+  scale_linetype_manual(values = c("SWin" = "solid", "SWout" = "dashed"))
+
+trans_albedo_SWinout_april
+```
+
+```{r}
+#combining february albedo and SWin/out plots
+transb_albedo_allplots_feb <- trans_albedo_plot_feb + trans_albedo_SWinout_feb + plot_layout(nrow = 2)
+
+transb_albedo_allplots_feb
+
+#combining april albedo and SWin/out plots
+transb_albedo_allplots_april <- trans_albedo_plot_april + trans_albedo_SWinout_april + plot_layout(nrow = 2)
+
+transb_albedo_allplots_april
+
+#combinging just february and april albedo plots
+trans_b_albedo_plots_all<- trans_albedo_plot_feb + trans_albedo_plot_april + plot_layout(nrow = 2)
+
+#saving february all plots
+ggsave("transb_albedo_allplots_feb.png", plot = transb_albedo_allplots_feb, width = 8, height = 6, dpi = 300, bg = "white")
+
+#saving april all plots
+ggsave("transb_albedo_allplots_april.png", plot = transb_albedo_allplots_april, width = 8, height = 6, dpi = 300, bg = "white")
+
+# Save the transitional combined plot as a PNG file to working directory
+ggsave("trans_b_albedo_plots_all.png", plot = trans_b_albedo_plots_all, width = 8, height = 6, dpi = 300, bg = "white")
+```
+
+```{r}
+#persistent - May 13th Date
+
+pers_albedo_plot_may13 <- ggplot() +
+  geom_col(data = pers_albedo_may13, aes(x = Record_location, y = Albedo, fill = Site), alpha = 0.7, width = 0.6, position = "dodge") +
+  labs(
+    title = "Persistent Burned Albedo: 2024-05-13",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("pers_b_lp_highmort" = "red", "pers_b_lp_lowmort" = "blue"))
+
+pers_albedo_plot_may13
+
+#pers_albedo_plot_may31
+# Combine the datasets to use for ggplot
+pers_combined_albedo_may31 <- bind_rows(
+  pers_albedo_may31 %>% mutate(DataType = "Burned"),
+  pers_ub_albedo_all %>% mutate(DataType = "Unburned")
+)
+
+pers_albedo_plot_may31 <- ggplot(pers_combined_albedo_may31, aes(x = Record_location, y = Albedo, fill = Site, group = interaction(Record_location, DataType))) +
+  geom_col(alpha = 0.7, width = 0.4, position = position_dodge(width = 0.5)) +
+  labs(
+    title = "Persistent Burned & Unburned Albedo: 2024-05-31",
+    x = "Transect point (1 m apart)",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_fill_manual(values = c("pers_b_lp_highmort" = "red", "pers_ub" = "blue"))
+
+pers_albedo_plot_may31
+```
+
+```{r}
+#persistent SWin/out plot
+##May 13th
+pers_albedo_SWinout_may13 <- ggplot() +
+  # SWin
+  geom_line(data = pers_albedo_may13, aes(x = Record_location, y = SWin_wperm2, color = Site, group = Site, linetype = "SWin"), alpha = 0.7, linewidth = 0.8) +
+  # SWout
+  geom_line(data = pers_albedo_may13, aes(x = Record_location, y = SWout_wperm2, color = Site, group = Site, linetype = "SWout"), alpha = 0.5, linewidth = 0.8) +
+  labs(
+    x = "Transect point (1 m apart)",
+    y = "SWin/out (W/m2)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_color_manual(values = c("pers_b_lp_highmort" = "red", "pers_b_lp_lowmort" = "blue")) +
+  scale_linetype_manual(values = c("SWin" = "solid", "SWout" = "dashed"))
+
+pers_albedo_SWinout_may13
+
+#May31
+pers_albedo_SWinout_may31 <- ggplot() +
+  # SWin
+  geom_line(data = pers_albedo_may31, aes(x = Record_location, y = SWin_wperm2, color = Site, group = Site, linetype = "SWin"), alpha = 0.7, linewidth = 0.8) +
+  # SWout
+  geom_line(data = pers_albedo_may31, aes(x = Record_location, y = SWout_wperm2, color = Site, group = Site, linetype = "SWout"), alpha = 0.5, linewidth = 0.8) +
+  geom_line(data = pers_ub_albedo_all, aes(x = Record_location, y = SWin_wperm2, color = Site, group = Site, linetype = "SWin"), alpha = 0.7, linewidth = 0.8) +
+  geom_line(data = pers_ub_albedo_all, aes(x = Record_location, y = SWout_wperm2, color = Site, group = Site, linetype = "SWout"), alpha = 0.5, linewidth = 0.8) +
+  labs(
+    x = "Transect point (1 m apart)",
+    y = "SWin/out (W/m2)"
+  ) +
+  theme_minimal() +
+  scale_x_continuous(breaks = seq(min(trans_albedo_all$Record_location), max(trans_albedo_all$Record_location), by = 1)) +
+  scale_color_manual(values = c("pers_b_lp_highmort" = "red", "pers_ub" = "blue")) +
+  scale_linetype_manual(values = c("SWin" = "solid", "SWout" = "dashed"))
+
+pers_albedo_SWinout_may31
+```
+
+```{r}
+#combining May 13th albedo and SWin/out plots
+persb_albedo_allplots_may13 <- pers_albedo_plot_may13 + pers_albedo_SWinout_may13 + plot_layout(nrow = 2)
+
+persb_albedo_allplots_may13
+
+#combining May 31st albedo and SWin/out plots
+pers_albedo_allplots_may31 <- pers_albedo_plot_may31 + pers_albedo_SWinout_may31 + plot_layout(nrow = 2)
+
+pers_albedo_allplots_may31
+
+#saving May 13th all plots
+ggsave("persb_albedo_allplots_may13.png", plot = persb_albedo_allplots_may13, width = 8, height = 6, dpi = 300, bg = "white")
+
+#saving May 31st all plots
+ggsave("pers_albedo_allplots_may31.png", plot = pers_albedo_allplots_may31, width = 8, height = 6, dpi = 300, bg = "white")
+```
