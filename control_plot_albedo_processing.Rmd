@@ -386,3 +386,5 @@ all_control_plots
 #saving combined plot
 ggsave("all_controlplot_albedo_results.png", plot = all_control_plots, width = 8, height = 6, dpi = 300, bg = "white")
 ```
+
+\*\* made comment here to see if I can get git to connect/push/pull
