@@ -18,91 +18,90 @@ library(ggplot2)
 library(stringr)
 library(readxl)
 library(rstatix)
-library(sf)
-library(terra)
 library(plotly)
 library(patchwork)
+library(ggpubr)
 
 setwd("/Volumes/wcnr-network/Research/Kampf/Private/field_data")
 ```
 
 ```{r}
 #read in weather data for burned stations
-trans_burned_wx_15min_r = read_excel('nsf/trans_burned/trans_burned_wx_15min_r.xlsx') %>%
-  mutate(datetime = ymd_hms(datetime, tz = "MST")) %>%
-  filter(datetime >= "2024-02-02 00:00:00" & datetime <= "2024-05-01 00:00:00")
+trans_burned_wx_15min_r = read_csv('nsf/trans_burned/trans_burned_wx_15min_r.csv') %>%
+  mutate(datetime = as.POSIXct(datetime, format=("%Y-%m-%d %H:%M:%S")), datetime = force_tz(datetime, tz = 'MST'))
 
-pers_burned_wx_15min_r = read_excel('nsf/pers_burned/pers_burned_wx_15min_r.xlsx') %>%
-  mutate(datetime = ymd_hms(datetime, tz = "MST")) %>%
-  filter(datetime >= "2024-02-02 00:00:00" & datetime <= "2024-05-01 00:00:00")
+pers_burned_wx_hourly_r = read_csv('nsf/pers_burned/pers_burned_wx_hourly_r.csv') %>%
+  mutate(datetime = as.POSIXct(datetime, format=("%Y-%m-%d %H:%M:%S")), datetime = force_tz(datetime, tz = 'MST'))
 ```
 
 ```{r}
 #read in persistent burned data
 pers_ub_albedo_all <- read_excel("nsf/albedo/Pers_ub_albedo.xlsx") %>%
-  # Convert Date to the correct date format
-  mutate(Date = ymd(Date)) %>%
-  # Ensure Time is formatted correctly (remove any weird date part)
-  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
-  mutate(datetime = ymd_hms(paste(Date, Time)))
+  mutate(date = as_date(Date), time = format(Time, "%H:%M:%S")) %>%
+  mutate(datetime = as.POSIXct(paste(date, time))) %>%
+  mutate(datetime = force_tz(datetime, tzone = "MST")) %>%
+  select(-c(Date, Time)) %>%
+  select(date, time, everything())
 
 #read in persistent data
 pers_albedo_all <- read_excel("nsf/albedo/Pers_b_albedo.xlsx") %>%
-  # Convert Date to the correct date format
-  mutate(Date = ymd(Date)) %>%
-  # Ensure Time is formatted correctly (remove any weird date part)
-  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
-  mutate(datetime = ymd_hms(paste(Date, Time)))
+mutate(date = as_date(Date), time = format(Time, "%H:%M:%S")) %>%
+  mutate(datetime = as.POSIXct(paste(date, time))) %>%
+  mutate(datetime = force_tz(datetime, tzone = "MST")) %>%
+  select(-c(Date, Time)) %>%
+  select(date, time, everything())
 
 #read in persistent data - this is V2, where I manipulated the 5/31 data!
 pers_albedo_all_V2 <- read_excel("nsf/albedo/Pers_b_albedo_V2.xlsx") %>%
   # Convert Date to the correct date format
-  mutate(Date = ymd(Date)) %>%
-  # Ensure Time is formatted correctly (remove any weird date part)
-  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
-  mutate(datetime = ymd_hms(paste(Date, Time)))
+  mutate(date = as_date(Date), time = format(Time, "%H:%M:%S")) %>%
+  mutate(datetime = as.POSIXct(paste(date, time))) %>%
+  mutate(datetime = force_tz(datetime, tzone = "MST")) %>%
+  select(-c(Date, Time)) %>%
+  select(date, time, everything())
 
 #selecting for May 13 albedo readings
 pers_albedo_may13 <- pers_albedo_all %>%
-  filter(Date == '2024-05-13')
+  filter(date == '2024-05-13')
 
 #selecting for May 31 albedo readings
 pers_albedo_may31 <- pers_albedo_all_V2 %>%
-  filter(Date == '2024-05-31')
-
+  filter(date == '2024-05-31')
 
 pers_mean_albedo_by_date <- pers_albedo_all %>%
-  group_by(Date) %>%
+  group_by(date) %>%
   summarize(mean_Albedo = mean(Albedo, na.rm = TRUE))
 
 # Join the mean albedo data back to the original dataframe
 pers_albedo_all <- pers_albedo_all %>%
-  left_join(pers_mean_albedo_by_date, by = "Date")
+  left_join(pers_mean_albedo_by_date, by = "date") %>%
+  select(datetime, date, time, everything())
   
 
 # Read the Excel file
 trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx") %>%
-  # Convert Date to the correct date format
-  mutate(Date = ymd(Date)) %>%
-  # Ensure Time is formatted correctly (remove any weird date part)
-  mutate(Time = format(as.POSIXct(Time, format = "%H:%M:%S"), format = "%H:%M:%S")) %>%
-  mutate(datetime = ymd_hms(paste(Date, Time)))
+  mutate(date = as_date(Date), time = format(Time, "%H:%M:%S")) %>%
+  mutate(datetime = as.POSIXct(paste(date, time))) %>%
+  mutate(datetime = force_tz(datetime, tzone = "MST")) %>%
+  select(-c(Date, Time)) %>%
+  select(date, time, everything())
 
 #selecting for April albedo readings
 trans_albedo_april <- trans_albedo_all %>%
-  filter(Date == '2024-04-12')
+  filter(date == '2024-04-12')
 
 trans_albedo_feb <- trans_albedo_all %>%
-  filter(Date == '2024-02-19')
+  filter(date == '2024-02-19')
 
 
 trans_mean_albedo_by_date <- trans_albedo_all %>%
-  group_by(Date) %>%
+  group_by(date) %>%
   summarize(mean_Albedo = mean(Albedo, na.rm = TRUE))
 
 # Join the mean albedo data back to the original dataframe
 trans_albedo_all <- trans_albedo_all %>%
-  left_join(trans_mean_albedo_by_date, by = "Date")
+  left_join(trans_mean_albedo_by_date, by = "date") %>%
+  select(datetime, date, time, everything())
 
 #creating a combined dataset with SWin and SWout together
 trans_SW_combined <- trans_albedo_all %>%
@@ -112,6 +111,202 @@ trans_SW_combined <- trans_albedo_all %>%
   #filter out only those that say sun
   filter(Sun_shadow == "sun")
 ```
+
+## Newer Dataframes & Plotting (2024.8.28)
+
+Creating cleaned up, averaged by month, dataframes for new plots - as of 2024.08.28
+
+```{r}
+#transitional zone
+avg_trans_albedo_lowmort <- trans_albedo_all %>%
+  filter(Site == "trans_b_lp_lowmort") %>%
+  mutate(month = month(date)) %>%
+  group_by(month) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  #adding a date column so I can plot with weather station data
+  mutate(date = as.Date(paste0("2024-", month, "-15"), format = "%Y-%m-%d")) %>%
+  mutate(date = as.Date(date))
+
+avg_trans_albedo_highmort <- trans_albedo_all %>%
+  filter(Site == "trans_b_lp_highmort") %>%
+  mutate(month = month(date)) %>%
+  group_by(month) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  mutate(date = as.Date(paste0("2024-", month, "-15"), format = "%Y-%m-%d")) %>%
+  mutate(date = as.Date(date))
+```
+
+\*\*I don't have persistent data for any months except May, so these dataframes are not that helpful. Once I have better data then I can compare them better?
+
+```{r}
+#persistent zone
+avg_pers_albedo_lowmort <- pers_albedo_all %>%
+  filter(Site == "pers_b_lp_lowmort") %>%
+  mutate(month = month(date)) %>%
+  group_by(month) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  #adding a mid-month date column so I can plot with the weather station data
+  mutate(date = "2024-05-15") %>%
+  mutate(date = as.Date(date))
+
+avg_pers_albedo_highmort <- pers_albedo_all %>%
+  filter(Site == "pers_b_lp_highmort") %>%
+  mutate(month = month(date)) %>%
+  group_by(month) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  mutate(date = "2024-05-15") %>%
+  mutate(date = as.Date(date))
+```
+
+Weather Station Dataframes
+
+```{r}
+#filtering for the months of feb-may
+filtered_daily_persb_wx <- pers_burned_wx_hourly_r %>%
+  filter(datetime >= as.POSIXct("2024-02-02 00:00:00") & datetime <= as.POSIXct("2024-06-05 00:00:00")) %>%
+  mutate(date = as.Date(datetime)) %>%
+  group_by(date) %>%
+  summarize(avg_swin_wperm2 = mean(SWin_Avg), avg_swout_wperm2 = mean(SWout_Avg), mean_sw_albedo = mean(SWalbedo_Avg), mean_sdepth_m = mean(SnowDepth_m)) %>%
+  mutate(mean_sdepth_cm = mean_sdepth_m*100)
+
+filtered_daily_transb_wx <- trans_burned_wx_15min_r %>%
+  filter(datetime >= as.POSIXct("2024-02-02 00:00:00") & datetime <= as.POSIXct("2024-06-05 00:00:00")) %>%
+  drop_na() %>%
+  mutate(date = as.Date(datetime)) %>%
+  group_by(date) %>%
+  summarize(avg_swin_wperm2 = mean(SWin_Avg), avg_swout_wperm2 = mean(SWout_Avg), mean_sw_albedo = mean(SWalbedo_Avg), mean_sdepth_m = mean(SnowDepth_m)) %>%
+  mutate(mean_sdepth_cm = mean_sdepth_m*100)
+```
+
+Plottting Wx Station Data and monthly albedo plot readings
+
+```{r}
+#setting constants for plots
+color_values <- c(
+  "avg_swin_wperm2" = "#D95F02",
+  "avg_swout_wperm2" = "#E6AB02",
+  "mean_sw_albedo" = "#66A61E",
+  "mean_sdepth_cm" = "#7570B3", 
+  "plot_albedo_highmort" = "red", 
+  "plot_albedo_lowmort" = "black")
+
+# Define line types
+line_types <- c(
+  "Weather Station" = "solid",
+  "Tree Temperature Sensors" = "dashed"
+)
+
+#changing labels of values in plots for the legend
+color_labels <- c(
+  "avg_swin_wperm2" = "Wx Station Shortwave In",
+  "avg_swout_wperm2" = "Wx Station Shortwave Out",
+  "mean_sw_albedo" = "Wx Station Shortwave Albedo", 
+  "plot_albedo_highmort" = "High Mortality Plot Albedo",
+  "plot_albedo_lowmort" = "Low Mortality Plot Albedo"
+)
+```
+
+```{r}
+pers_sw_wx_plot_data <- ggplot() +  
+  geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swin_wperm2, color = "avg_swin_wperm2")) +
+  geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2")) +
+  labs(
+    title = "Persistent Burned",
+    x = "Date",
+    y = "Radiation components (W/m2)",
+    color = "Variable"
+    ) +
+  theme_bw() +  # Use a minimal theme for a clean look
+  scale_color_manual(values = color_values, labels = color_labels)
+
+pers_sw_wx_plot_data
+
+pers_albedo_plot_data <- ggplot() +  
+ geom_line(data = filtered_daily_persb_wx, aes(x = date, y = mean_sw_albedo, color = "mean_sw_albedo")) +
+  # Add points for avg_swout_wperm2
+  geom_point(data = avg_pers_albedo_highmort, 
+             aes(x = date, y = mean_albedo, color = "plot_albedo_highmort"), size = 2) +
+  geom_point(data = avg_pers_albedo_lowmort, 
+             aes(x = date, y = mean_albedo, color = "plot_albedo_lowmort"), size = 1) +
+  labs(
+    x = "Date",
+    y = "Albedo (unitless)",
+    color = "Variable"
+    ) +
+  theme_bw() +  # Use a minimal theme for a clean look
+  scale_color_manual(values = color_values, labels = color_labels)
+
+trans_albedo_plot_data
+```
+
+```{r}
+#swin/out weather station data - to be stacked ontop of albedo plot because y-values are very different
+trans_sw_wx_plot_data <- ggplot() +  
+  geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swin_wperm2, color = "avg_swin_wperm2")) +
+  geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2")) +
+  labs(
+    title = "Transitional Burned",
+    x = "Date",
+    y = "Radiation components (W/m2)",
+    color = "Variable"
+    ) +
+  theme_bw() +  # Use a minimal theme for a clean look
+  scale_color_manual(values = color_values, labels = color_labels)
+
+trans_sw_wx_plot_data
+
+trans_albedo_plot_data <- ggplot() +  
+ geom_line(data = filtered_daily_transb_wx, aes(x = date, y = mean_sw_albedo, color = "mean_sw_albedo")) +
+  # Add points for avg_swout_wperm2
+  geom_point(data = avg_trans_albedo_highmort, 
+             aes(x = date, y = mean_albedo, color = "plot_albedo_highmort"), size = 2) +
+  geom_point(data = avg_trans_albedo_lowmort, 
+             aes(x = date, y = mean_albedo, color = "plot_albedo_lowmort"), size = 1) +
+  labs(
+    x = "Date",
+    y = "Albedo (unitless)",
+    color = "Variable"
+    ) +
+  theme_bw() +  # Use a minimal theme for a clean look
+  scale_color_manual(values = color_values, labels = color_labels)
+
+trans_albedo_plot_data
+```
+
+```{r}
+#arranging like plots next to each other, then combining for a final plot
+
+comb_sw_wx_plots <- ggarrange(
+  pers_sw_wx_plot_data, 
+  trans_sw_wx_plot_data, 
+  nrow = 1, 
+  common.legend = TRUE, 
+  legend = "right"
+)
+
+comb_sw_wx_plots
+
+comb_albedo_plots <- ggarrange(pers_albedo_plot_data, trans_albedo_plot_data, nrow = 1, 
+  common.legend = TRUE, 
+  legend = "right"
+)
+
+comb_albedo_plots
+```
+
+```{r}
+#final combined plot
+final_comb_swalbedo_plot <- ggarrange(comb_sw_wx_plots, comb_albedo_plots, nrow = 2, common.legend = TRUE, legend = "right")
+
+final_comb_swalbedo_plot
+```
+
+```{r}
+#saving combined plot
+ggsave(filename = "final_comb_swalbedo_plot.png", plot = final_comb_swalbedo_plot, width = 15, height = 10, dpi = 300)
+```
+
+## Older Dataframes, Wrangling & Plotting
 
 ```{r}
 #plot data
@@ -124,7 +319,6 @@ trans_albedo_plotly <- ggplotly(trans_albedo)
 
 # Print the plotly object to display the interactive plot
 trans_albedo_plotly
-  
 ```
 
 Snow depth and albedo plots
