@@ -150,8 +150,6 @@ display.brewer.pal(n = 8, name = "Dark2")
 
 #to get the hex number of the colors
 brewer.pal(n = 8, name = "Dark2")
-
-custom_colors <- brewer.pal(c("#D95F02", "#E6AB02", "#66A61E"))
 ```
 
 ```{r}
@@ -200,7 +198,7 @@ print(trans_b_control_all)
 print(pers_b_control_all_V2)
 ```
 
-Creating Box Plots of Range
+Creating Box Plots of Range - new as of 2024.08.28
 
 ```{r}
 #persistent box plots
@@ -213,20 +211,22 @@ pers_control_boxplot <- ggplot(pers_control_all, aes(x = site_name, y = albedo))
 print(pers_control_boxplot)
 
 ##this approach seems to have the best data display
-pers_control_boxplots_byconc <- ggplot(pers_control_all, aes(x = concentration, y = albedo)) +
-  geom_boxplot() +
+pers_control_boxplots_byconc <- ggplot(pers_control_all, aes(x = concentration, y = albedo, fill = concentration)) +
+  geom_boxplot(alpha = 0.9) +
   theme_minimal() +
   labs(title = "Persistent Control Boxplots by Concentration", x = "Concentration", y = "Albedo (unitless)") +
-  facet_wrap(~ date)
+  facet_wrap(~ date) +
+  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#666666"))  # Customize colors as needed
 
 print(pers_control_boxplots_byconc)
 
 #transitional
-trans_control_boxplots_byconc <- ggplot(trans_control_all, aes(x = concentration, y = albedo)) +
-  geom_boxplot() +
+trans_control_boxplots_byconc <- ggplot(trans_control_all, aes(x = concentration, y = albedo, fill = concentration)) +
+  geom_boxplot(alpha = 0.9) +
   theme_minimal() +
   labs(title = "Transitional Control Boxplots by Concentration", x = "Concentration", y = "Albedo (unitless)") +
-  facet_wrap(~ date)
+  facet_wrap(~ date, ncol = 2, nrow = 2) + 
+  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#666666")) 
 
 print(trans_control_boxplots_byconc)
 ```
@@ -236,7 +236,7 @@ print(trans_control_boxplots_byconc)
 # Save the plot as a PNG file to working directory
 ggsave("pers_control_boxplots_byconc.png", plot = pers_control_boxplots_byconc, width = 8, height = 6, dpi = 300, bg = "white")
 
-ggsave("trans_control_boxplots_byconc.png", plot = pers_control_boxplots_byconc, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("trans_control_boxplots_byconc.png", plot = trans_control_boxplots_byconc, width = 8, height = 6, dpi = 300, bg = "white")
 ```
 
 ```{r}
@@ -299,6 +299,8 @@ pers_control_all <- pers_control_all %>%
 combined_zone_control_data <- rbind(pers_control_all, trans_control_all)
 ```
 
+Updated code chunk as of 2024.08.28
+
 ```{r}
 #COMBINED DATA FRAME PLOTS
 ##combined albedo plots
@@ -310,7 +312,7 @@ all_control_albedo_plot <- ggplot(data = combined_zone_control_data) +
     y = "Mean Albedo by Concentration (unitless)", fill = "Concentration of Soot Added"  # Rename the legend title here
   ) +
   theme_bw() +
-  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#66A61E")) +
+  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#666666")) +
   facet_wrap(~zone, scales = "free_x")
 #set scales = "free_x" for the facet wrap to let the individual plots set their own x scale
 
@@ -326,11 +328,33 @@ all_control_snowdepth_plots <- ggplot() +
     fill = "Concentration of Soot Added"  # Rename the legend title here
   ) +
   theme_bw() +
-  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#66A61E")) +
+  scale_fill_manual(values = c("high (3 g)" = "#D95F02", "low (1 g)" = "#E6AB02", "none" = "#666666")) +
   facet_wrap(~zone, scales = "free_x")
 
 all_control_snowdepth_plots
 ```
+
+```{r}
+#Combinging the combined albedo and snowdepth plots
+all_control_plots <- ggarrange(
+  all_control_albedo_plot, 
+  all_control_snowdepth_plots, 
+  nrow = 2,              # Arrange in 2 rows
+  common.legend = TRUE,  # Share a common legend
+  legend = "right"       # Position the legend on the right
+)
+
+all_control_plots
+```
+
+```{r}
+#saving combined plot
+ggsave("all_controlplot_albedo_results.png", plot = all_control_plots, width = 10, height = 6, dpi = 300, bg = "white")
+```
+
+## Older data wrangling and plotting 
+
+-   before 2024.08.28
 
 ```{r}
 #INDIVIDUAL DATA FRAME PLOTS
@@ -399,22 +423,4 @@ pers_control_allplots
 trans_control_allplots <- trans_controlalb_all_plot + trans_controlsnowdepth_all_plot + plot_layout(nrow = 2)
 
 trans_control_allplots
-
-#Combinging the combined albedo and snowdepth plots
-all_control_plots <- ggarrange(
-  all_control_albedo_plot, 
-  all_control_snowdepth_plots, 
-  nrow = 2,              # Arrange in 2 rows
-  common.legend = TRUE,  # Share a common legend
-  legend = "right"       # Position the legend on the right
-)
-
-all_control_plots
 ```
-
-```{r}
-#saving combined plot
-ggsave("all_controlplot_albedo_results.png", plot = all_control_plots, width = 10, height = 6, dpi = 300, bg = "white")
-```
-
-\*\* made comment here to see if I can get git to connect/push/pull
