@@ -62,11 +62,21 @@ pers_albedo_all_V2 <- read_excel("nsf/albedo/Pers_b_albedo_V2.xlsx") %>%
 
 #selecting for May 13 albedo readings
 pers_albedo_may13 <- pers_albedo_all %>%
-  filter(date == '2024-05-13')
+  filter(date == '2024-05-13') %>%
+  mutate(mortality = case_when(
+    str_detect(Site, "_lowmort$") ~ "low mortality",
+    str_detect(Site, "_highmort$") ~ "high mortality",
+    TRUE ~ NA_character_  # Default case if neither condition is met
+  ))
 
 #selecting for May 31 albedo readings
 pers_albedo_may31 <- pers_albedo_all_V2 %>%
-  filter(date == '2024-05-31')
+  filter(date == '2024-05-31') %>%
+  mutate(mortality = case_when(
+    str_detect(Site, "_lowmort$") ~ "low mortality",
+    str_detect(Site, "_highmort$") ~ "high mortality",
+    TRUE ~ NA_character_  # Default case if neither condition is met
+  ))
 
 pers_mean_albedo_by_date <- pers_albedo_all %>%
   group_by(date) %>%
@@ -75,7 +85,16 @@ pers_mean_albedo_by_date <- pers_albedo_all %>%
 # Join the mean albedo data back to the original dataframe
 pers_albedo_all <- pers_albedo_all %>%
   left_join(pers_mean_albedo_by_date, by = "date") %>%
-  select(datetime, date, time, everything())
+  select(datetime, date, time, everything()) %>%
+  mutate(mortality = case_when(
+    str_detect(Site, "_lowmort$") ~ "low mortality",
+    str_detect(Site, "_highmort$") ~ "high mortality",
+    TRUE ~ NA_character_  # Default case if neither condition is met
+  )) %>%
+  mutate(
+    # Parse the month and create a new column
+    month = month(ymd_hms(datetime))
+  )
   
 
 # Read the Excel file
@@ -88,10 +107,20 @@ trans_albedo_all <- read_excel("nsf/albedo/Trans_b_albedo.xlsx") %>%
 
 #selecting for April albedo readings
 trans_albedo_april <- trans_albedo_all %>%
-  filter(date == '2024-04-12')
+  filter(date == '2024-04-12') %>%
+  mutate(mortality = case_when(
+    str_detect(Site, "_lowmort$") ~ "low mortality",
+    str_detect(Site, "_highmort$") ~ "high mortality",
+    TRUE ~ NA_character_  # Default case if neither condition is met
+  ))
 
 trans_albedo_feb <- trans_albedo_all %>%
-  filter(date == '2024-02-19')
+  filter(date == '2024-02-19') %>%
+  mutate(mortality = case_when(
+    str_detect(Site, "_lowmort$") ~ "low mortality",
+    str_detect(Site, "_highmort$") ~ "high mortality",
+    TRUE ~ NA_character_  # Default case if neither condition is met
+  ))
 
 
 trans_mean_albedo_by_date <- trans_albedo_all %>%
@@ -101,7 +130,16 @@ trans_mean_albedo_by_date <- trans_albedo_all %>%
 # Join the mean albedo data back to the original dataframe
 trans_albedo_all <- trans_albedo_all %>%
   left_join(trans_mean_albedo_by_date, by = "date") %>%
-  select(datetime, date, time, everything())
+  select(datetime, date, time, everything()) %>%
+  mutate(mortality = case_when(
+    str_detect(Site, "_lowmort$") ~ "low mortality",
+    str_detect(Site, "_highmort$") ~ "high mortality",
+    TRUE ~ NA_character_  # Default case if neither condition is met
+  )) %>%
+  mutate(
+    # Parse the month and create a new column
+    month = month(ymd_hms(datetime))
+  )
 
 #creating a combined dataset with SWin and SWout together
 trans_SW_combined <- trans_albedo_all %>%
@@ -122,7 +160,7 @@ avg_trans_albedo_lowmort <- trans_albedo_all %>%
   filter(Site == "trans_b_lp_lowmort") %>%
   mutate(month = month(date)) %>%
   group_by(month) %>%
-  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo)) %>%
   #adding a date column so I can plot with weather station data
   mutate(date = as.Date(paste0("2024-", month, "-15"), format = "%Y-%m-%d")) %>%
   mutate(date = as.Date(date))
@@ -131,7 +169,7 @@ avg_trans_albedo_highmort <- trans_albedo_all %>%
   filter(Site == "trans_b_lp_highmort") %>%
   mutate(month = month(date)) %>%
   group_by(month) %>%
-  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo)) %>%
   mutate(date = as.Date(paste0("2024-", month, "-15"), format = "%Y-%m-%d")) %>%
   mutate(date = as.Date(date))
 ```
@@ -144,7 +182,7 @@ avg_pers_albedo_lowmort <- pers_albedo_all %>%
   filter(Site == "pers_b_lp_lowmort") %>%
   mutate(month = month(date)) %>%
   group_by(month) %>%
-  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo)) %>%
   #adding a mid-month date column so I can plot with the weather station data
   mutate(date = "2024-05-15") %>%
   mutate(date = as.Date(date))
@@ -153,7 +191,7 @@ avg_pers_albedo_highmort <- pers_albedo_all %>%
   filter(Site == "pers_b_lp_highmort") %>%
   mutate(month = month(date)) %>%
   group_by(month) %>%
-  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo.x)) %>%
+  summarize(mean_swin = mean(SWin_wperm2), mean_swout = mean(SWout_wperm2), mean_albedo = mean(mean_Albedo)) %>%
   mutate(date = "2024-05-15") %>%
   mutate(date = as.Date(date))
 ```
@@ -209,7 +247,7 @@ color_labels <- c(
 ```{r}
 pers_sw_wx_plot_data <- ggplot() +  
   geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swin_wperm2, color = "avg_swin_wperm2")) +
-  geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2")) +
+  geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2"), alpha = 0.9) +
   labs(
     title = "Persistent Burned",
     x = "Date",
@@ -236,14 +274,14 @@ pers_albedo_plot_data <- ggplot() +
   theme_bw() +  # Use a minimal theme for a clean look
   scale_color_manual(values = color_values, labels = color_labels)
 
-trans_albedo_plot_data
+pers_albedo_plot_data
 ```
 
 ```{r}
 #swin/out weather station data - to be stacked ontop of albedo plot because y-values are very different
 trans_sw_wx_plot_data <- ggplot() +  
   geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swin_wperm2, color = "avg_swin_wperm2")) +
-  geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2")) +
+  geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2"), alpha = 0.9) +
   labs(
     title = "Transitional Burned",
     x = "Date",
@@ -306,20 +344,191 @@ final_comb_swalbedo_plot
 ggsave(filename = "final_comb_swalbedo_plot.png", plot = final_comb_swalbedo_plot, width = 15, height = 10, dpi = 300)
 ```
 
-## Older Dataframes, Wrangling & Plotting
+Box Plots of Mortality Plot Albedo Readings
+
+-   plotting by month than combining dataframes
 
 ```{r}
-#plot data
-trans_albedo <- ggplot(data = trans_SW_combined) +
-  geom_point(aes(x = Record_location, y = value, color = SW)) +
-  ggtitle("transitional")
+#seperating box plots by month - TRANSITIONAL
 
-# Convert the ggplot object to a plotly object
-trans_albedo_plotly <- ggplotly(trans_albedo)
+trans_feb_albedo_boxplot <- ggplot() +
+  geom_boxplot(data = trans_albedo_feb, aes(x = Record_location, y = Albedo, fill = mortality)) +
+  labs(
+    title = "Transitional February Albedo",
+    x = "Category",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
 
-# Print the plotly object to display the interactive plot
-trans_albedo_plotly
+trans_feb_albedo_boxplot
+
+trans_april_albedo_boxplot <- ggplot() +
+  geom_boxplot(data = trans_albedo_april, aes(x = Record_location, y = Albedo, fill = mortality)) +
+  labs(
+    title = "Transitional April Albedo",
+    x = "Category",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
+
+trans_april_albedo_boxplot
 ```
+
+```{r}
+#seperating box plots by month - PERSISTENT
+
+pers_may13_albedo_boxplot <- ggplot() +
+  geom_boxplot(data = pers_albedo_may13, aes(x = Record_location, y = Albedo, fill = mortality)) +
+  labs(
+    title = "Persistent May 13th Albedo",
+    x = "Category",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
+
+pers_may13_albedo_boxplot
+
+pers_may31_albedo_boxplot <- ggplot() +
+  geom_boxplot(data = pers_albedo_may31, aes(x = Record_location, y = Albedo, fill = mortality)) +
+  labs(
+    title = "Persistent May 31st Albedo",
+    x = "Category",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
+
+pers_may31_albedo_boxplot
+```
+
+Bar Plots for All Zones by Date
+
+```{r}
+#setting colors for bars bars based on mortality
+albedo_mortality_values <- c("low mortality" = "#E6AB02", "high mortality" = "#D95F02")
+```
+
+```{r}
+#transitional barplots
+trans_albedo_april_barplots <- ggplot(data = trans_albedo_april) +
+  geom_bar(aes(x = Record_location, y = Albedo, fill = mortality), stat = "identity", position = "dodge") +
+  scale_x_continuous(
+    limits = c(0, 10),                # Set limits from 0 to 10
+    breaks = seq(0, 10, by = 1)       # Set increments of 1
+  ) +
+  labs(
+    title = "Transitional April 13th",
+    x = "Observation Point",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = albedo_mortality_values)
+
+trans_albedo_april_barplots
+
+trans_albedo_feb_barplots <- ggplot(data = trans_albedo_feb) +
+  geom_bar(aes(x = Record_location, y = Albedo, fill = mortality), stat = "identity", position = "dodge") +
+  scale_x_continuous(
+    limits = c(0, 10),                # Set limits from 0 to 10
+    breaks = seq(0, 10, by = 1)       # Set increments of 1
+  ) +
+  labs(
+    title = "Transitional February 19th",
+    x = "Observation Point",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = albedo_mortality_values)
+
+trans_albedo_feb_barplots
+```
+
+```{r}
+#persistent barplots
+pers_albedo_may13_barplots <- ggplot(data = pers_albedo_may13) +
+  geom_bar(aes(x = Record_location, y = Albedo, fill = mortality), stat = "identity", position = "dodge") +
+  scale_x_continuous(
+    limits = c(0, 10),                # Set limits from 0 to 10
+    breaks = seq(0, 10, by = 1)       # Set increments of 1
+  ) +
+  labs(
+    title = "Persistent May 13th",
+    x = "Observation Point",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = albedo_mortality_values)
+
+pers_albedo_may13_barplots
+
+pers_albedo_may31_barplots <- ggplot(data = pers_albedo_may31) +
+  geom_bar(aes(x = Record_location, y = Albedo, fill = mortality), stat = "identity", position = "dodge") +
+  scale_x_continuous(
+    limits = c(0, 10),                # Set limits from 0 to 10
+    breaks = seq(0, 10, by = 1)       # Set increments of 1
+  ) +
+  labs(
+    title = "Persistent May 31st",
+    x = "Observation Point",
+    y = "Albedo (unitless)"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = albedo_mortality_values)
+
+pers_albedo_may31_barplots
+```
+
+Arranging Plots
+
+```{r}
+trans_albedo_combined_barplot <- ggarrange(
+  trans_albedo_feb_barplots, 
+  trans_albedo_april_barplots,
+  ncol = 2, 
+  nrow = 1, 
+  common.legend = TRUE, 
+  legend = "right"
+)
+
+trans_albedo_combined_barplot
+
+pers_albedo_combined_barplot <- ggarrange(
+  pers_albedo_may13_barplots, 
+  pers_albedo_may31_barplots,
+  ncol = 2, 
+  nrow = 1, 
+  common.legend = TRUE, 
+  legend = "right"
+)
+
+pers_albedo_combined_barplot
+```
+
+```{r}
+#combining pers and trans albedo plots
+
+all_albedo_barplot <- ggarrange(
+  trans_albedo_combined_barplot, 
+  pers_albedo_combined_barplot,
+  ncol = 1, 
+  nrow = 2, 
+  common.legend = TRUE, 
+  legend = "right"
+)
+
+all_albedo_barplot
+```
+
+```{r}
+#saving barplot
+
+ggsave(filename = "all_albedo_barplot.png", plot = all_albedo_barplot, width = 8, height = 6, dpi = 300)
+```
+
+## Older Dataframes, Wrangling & Plotting
 
 Snow depth and albedo plots
 
