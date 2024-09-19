@@ -246,26 +246,26 @@ color_labels <- c(
 
 ```{r}
 pers_sw_wx_plot_data <- ggplot() +  
-  geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swin_wperm2, color = "avg_swin_wperm2")) +
-  geom_line(data = filtered_daily_persb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2"), alpha = 0.9) +
+  geom_col(data = filtered_daily_persb_wx, aes(x = date, y = avg_swin_wperm2, fill = "avg_swin_wperm2"), position = "dodge") +
+  geom_col(data = filtered_daily_persb_wx, aes(x = date, y = avg_swout_wperm2, fill = "avg_swout_wperm2"), position = "dodge") +
   labs(
     title = "Persistent Burned",
     x = "Date",
     y = "Radiation components (W/m2)",
-    color = "Variable"
+    fill = "Variable"
     ) +
   theme_bw() +  # Use a minimal theme for a clean look
-  scale_color_manual(values = color_values, labels = color_labels)
+  scale_fill_manual(values = color_values, labels = color_labels)
 
 pers_sw_wx_plot_data
 
 pers_albedo_plot_data <- ggplot() +  
- geom_line(data = filtered_daily_persb_wx, aes(x = date, y = mean_sw_albedo, color = "mean_sw_albedo")) +
+ geom_line(data = filtered_daily_persb_wx, aes(x = date, y = mean_sw_albedo, color = "mean_sw_albedo"), linewidth = 0.7) +
   # Add points for avg_swout_wperm2
   geom_point(data = avg_pers_albedo_highmort, 
-             aes(x = date, y = mean_albedo, color = "plot_albedo_highmort"), size = 2) +
+             aes(x = date, y = mean_albedo, color = "plot_albedo_highmort"), size = 3) +
   geom_point(data = avg_pers_albedo_lowmort, 
-             aes(x = date, y = mean_albedo, color = "plot_albedo_lowmort"), size = 1) +
+             aes(x = date, y = mean_albedo, color = "plot_albedo_lowmort"), size = 2) +
   labs(
     x = "Date",
     y = "Albedo (unitless)",
@@ -280,26 +280,26 @@ pers_albedo_plot_data
 ```{r}
 #swin/out weather station data - to be stacked ontop of albedo plot because y-values are very different
 trans_sw_wx_plot_data <- ggplot() +  
-  geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swin_wperm2, color = "avg_swin_wperm2")) +
-  geom_line(data = filtered_daily_transb_wx, aes(x = date, y = avg_swout_wperm2, color = "avg_swout_wperm2"), alpha = 0.9) +
+  geom_col(data = filtered_daily_transb_wx, aes(x = date, y = avg_swin_wperm2, fill = "avg_swin_wperm2"), position = "dodge") +
+  geom_col(data = filtered_daily_transb_wx, aes(x = date, y = avg_swout_wperm2, fill = "avg_swout_wperm2"), position = "dodge") +
   labs(
     title = "Transitional Burned",
     x = "Date",
     y = "Radiation components (W/m2)",
-    color = "Variable"
+    fill = "Variable"
     ) +
   theme_bw() +  # Use a minimal theme for a clean look
-  scale_color_manual(values = color_values, labels = color_labels)
+  scale_fill_manual(values = color_values, labels = color_labels)
 
 trans_sw_wx_plot_data
 
 trans_albedo_plot_data <- ggplot() +  
- geom_line(data = filtered_daily_transb_wx, aes(x = date, y = mean_sw_albedo, color = "mean_sw_albedo")) +
+ geom_line(data = filtered_daily_transb_wx, aes(x = date, y = mean_sw_albedo, color = "mean_sw_albedo"), linewidth = 0.7) +
   # Add points for avg_swout_wperm2
   geom_point(data = avg_trans_albedo_highmort, 
-             aes(x = date, y = mean_albedo, color = "plot_albedo_highmort"), size = 2) +
+             aes(x = date, y = mean_albedo, color = "plot_albedo_highmort"), size = 3) +
   geom_point(data = avg_trans_albedo_lowmort, 
-             aes(x = date, y = mean_albedo, color = "plot_albedo_lowmort"), size = 1) +
+             aes(x = date, y = mean_albedo, color = "plot_albedo_lowmort"), size = 2) +
   labs(
     x = "Date",
     y = "Albedo (unitless)",
